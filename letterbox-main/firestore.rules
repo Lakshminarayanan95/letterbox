@@ -1,0 +1,44 @@
+// ===============================================================
+// Assumed Data Model
+// ===============================================================
+//
+// Collection: letters
+// Document ID: auto-generated
+// Fields:
+//   - text: string (required)
+//   - date: string
+//   - songTitle: string
+//   - media: array of objects
+//   - createdAt: timestamp (required)
+//
+// ===============================================================
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper Functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isValidLetter(data) {
+      return data.text is string && data.text.size() < 10000 &&
+             (!('songTitle' in data) || (data.songTitle is string && data.songTitle.size() < 200)) &&
+             (!('themeId' in data) || (data.themeId is string && data.themeId.size() < 50)) &&
+             (!('date' in data) || (data.date is string && data.date.size() < 100)) &&
+             (!('media' in data) || (data.media is list && data.media.size() < 20)) &&
+             data.createdAt is timestamp;
+    }
+
+    match /letters/{letterId} {
+      // Anyone can read a letter if they have the ID
+      allow read: if true;
+      
+      // Anyone can create a letter (for this demo)
+      allow create: if isValidLetter(request.resource.data);
+      
+      // No updates or deletes allowed for now to keep it simple and immutable
+      allow update, delete: if false;
+    }
+  }
+}
